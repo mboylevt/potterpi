@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PotterPi - Wand Tracking Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .viewer-container {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #video-stream {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #00ff00;
+            animation: pulse 2s infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .last-spell {
+            background: rgba(0, 255, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            border-left: 4px solid #00ff00;
+        }
+
+        .spell-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #00ff00;
+        }
+
+        .spell-time {
+            font-size: 0.9em;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        .info-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+
+        .info-panel ul {
+            list-style: none;
+            padding-left: 20px;
+        }
+
+        .info-panel li:before {
+            content: "✨ ";
+            margin-right: 5px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            opacity: 0.7;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚡ PotterPi Wand Tracking</h1>
+            <div class="subtitle">
+                <span class="status-indicator"></span>
+                Live Camera Stream
+            </div>
+        </header>
+
+        <div class="viewer-container">
+            <div class="video-wrapper">
+                <img id="video-stream" src="{{ url_for('video_feed') }}" alt="Camera Stream">
+            </div>
+
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-label">Frames Processed</div>
+                    <div class="stat-value" id="frames">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Spells Detected</div>
+                    <div class="stat-value" id="spells">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">FPS</div>
+                    <div class="stat-value" id="fps">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Uptime</div>
+                    <div class="stat-value" id="uptime">0s</div>
+                </div>
+            </div>
+
+            <div id="last-spell-container"></div>
+        </div>
+
+        <div class="info-panel">
+            <h3>🧙 How to Use</h3>
+            <ul>
+                <li>Wave your IR wand in front of the camera</li>
+                <li>The green line shows the wand's path</li>
+                <li>Red/yellow circles indicate the current wand position</li>
+                <li>Recognized spells will appear below the video</li>
+            </ul>
+        </div>
+
+        <footer>
+            PotterPi - IR Wand Tracking System | Made with ✨ and Raspberry Pi
+        </footer>
+    </div>
+
+    <script>
+        // Update stats every second
+        function updateStats() {
+            fetch('/stats')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('frames').textContent = data.frames_processed.toLocaleString();
+                    document.getElementById('spells').textContent = data.spells_detected;
+                    document.getElementById('fps').textContent = data.fps;
+                    document.getElementById('uptime').textContent = formatUptime(data.uptime);
+
+                    // Update last spell if available
+                    if (data.last_spell) {
+                        const container = document.getElementById('last-spell-container');
+                        const spellTime = data.last_spell_time ? new Date(data.last_spell_time) : null;
+                        const timeStr = spellTime ? spellTime.toLocaleTimeString() : '';
+
+                        container.innerHTML = `
+                            <div class="last-spell">
+                                <div class="spell-name">${data.last_spell}</div>
+                                <div class="spell-time">Detected at ${timeStr}</div>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => console.error('Error fetching stats:', error));
+        }
+
+        function formatUptime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+
+            if (hours > 0) {
+                return `${hours}h ${minutes}m`;
+            } else if (minutes > 0) {
+                return `${minutes}m ${secs}s`;
+            } else {
+                return `${secs}s`;
+            }
+        }
+
+        // Update stats immediately and then every second
+        updateStats();
+        setInterval(updateStats, 1000);
+    </script>
+</body>
+</html>

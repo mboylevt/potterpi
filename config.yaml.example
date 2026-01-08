@@ -1,0 +1,39 @@
+# PotterPi Configuration File
+# Copy this file to config.yaml and customize
+
+# Logging configuration
+logging:
+  dir: "/var/log/potterpi"
+  file: "potterpi.log"
+  max_bytes: 10485760  # 10MB per file
+  backup_count: 5      # Keep 5 backup files (total ~50MB max)
+
+# Camera configuration
+camera:
+  width: 640
+  height: 480
+  framerate: 30
+
+# Motion tracker configuration
+tracker:
+  brightness_threshold: 200  # 0-255, higher = only very bright spots
+  min_movement: 5            # Minimum pixels to register movement
+  path_length: 30            # Maximum points to keep in path
+
+# Spell recognizer configuration
+recognizer:
+  min_points: 8              # Minimum points needed to recognize a spell
+  straightness_threshold: 0.6 # 0-1, how straight the line must be
+
+# Web viewer configuration
+web_viewer:
+  port: 5000                 # Port for web interface
+
+# Home Assistant integration
+homeassistant:
+  enabled: false             # Set to true to enable
+  url: "http://192.168.2.103:8123"
+  token: "YOUR_LONG_LIVED_ACCESS_TOKEN_HERE"
+
+# Spell detection settings
+spell_cooldown: 1.0          # Seconds between spell detections

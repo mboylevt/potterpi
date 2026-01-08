@@ -1,0 +1,19 @@
+# PotterPi Requirements
+#
+# Install with: pip3 install -r requirements.txt
+#
+
+# Core dependencies
+numpy>=1.24.0
+opencv-python>=4.8.0
+pyyaml>=6.0
+requests>=2.31.0
+
+# Raspberry Pi camera
+picamera2>=0.3.0
+
+# Web viewer
+Flask>=3.0.0
+
+# Datadog logging (optional - install on Pi only)
+# datadog>=0.48.0

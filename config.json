@@ -1,0 +1,28 @@
+{
+  "camera": {
+    "width": 640,
+    "height": 480,
+    "framerate": 30,
+    "exposure_time": 10000,
+    "analog_gain": 2.0
+  },
+  "tracking": {
+    "brightness_threshold": 200,
+    "min_movement": 5,
+    "path_length": 30
+  },
+  "recognition": {
+    "min_points": 8,
+    "straightness_threshold": 0.6,
+    "min_distance": 30
+  },
+  "homeassistant": {
+    "enabled": true,
+    "url": "http://192.168.2.103:8123",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJlZTEwN2UwYWJjNDY0OGU3YjlmOGZkMzI5MzhlMmRmNCIsImlhdCI6MTc2Nzg3OTIxMiwiZXhwIjoyMDgzMjM5MjEyfQ.iyJOLfbtqYgRXBenh3yw1ON9lpduZLlnjXyn_luSzCM"
+  },
+  "logging": {
+    "log_dir": "/var/log/potterpi",
+    "spell_cooldown": 1.0
+  }
+}
