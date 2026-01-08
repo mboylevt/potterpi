@@ -8,7 +8,7 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from spell_recognition import SpellRecognizer
+from potterpi.spell_recognition import SpellRecognizer
 import numpy as np
 
 

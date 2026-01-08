@@ -7,12 +7,12 @@ Main application for detecting and recognizing Harry Potter-style spell gestures
 import time
 import signal
 import sys
-from camera_capture import IRCamera
-from motion_tracker import WandTracker
-from spell_recognition import SpellRecognizer
-from spell_logger import SpellLogger
-from config import Config
-from homeassistant_api import HomeAssistantAPI
+from potterpi.camera_capture import IRCamera
+from potterpi.motion_tracker import WandTracker
+from potterpi.spell_recognition import SpellRecognizer
+from potterpi.spell_logger import SpellLogger
+from potterpi.config import Config
+from potterpi.homeassistant_api import HomeAssistantAPI
 
 class PotterPi:
     """Main application for wand tracking and spell recognition"""

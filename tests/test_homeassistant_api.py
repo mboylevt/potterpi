@@ -8,7 +8,7 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from homeassistant_api import HomeAssistantAPI
+from potterpi.homeassistant_api import HomeAssistantAPI
 from unittest.mock import Mock, patch, MagicMock
 
 
@@ -33,7 +33,7 @@ class TestHomeAssistantAPI:
         api = HomeAssistantAPI(url="http://test.local:8123/", token="test")
         assert api.url == "http://test.local:8123"
 
-    @patch('homeassistant_api.requests.get')
+    @patch('potterpi.homeassistant_api.requests.get')
     def test_test_connection_success(self, mock_get):
         """Test successful connection test"""
         mock_response = Mock()
@@ -53,7 +53,7 @@ class TestHomeAssistantAPI:
             timeout=5
         )
 
-    @patch('homeassistant_api.requests.get')
+    @patch('potterpi.homeassistant_api.requests.get')
     def test_test_connection_failure(self, mock_get):
         """Test failed connection test"""
         mock_response = Mock()
@@ -64,7 +64,7 @@ class TestHomeAssistantAPI:
 
         assert result is False
 
-    @patch('homeassistant_api.requests.get')
+    @patch('potterpi.homeassistant_api.requests.get')
     def test_test_connection_exception(self, mock_get):
         """Test connection test with network exception"""
         import requests
@@ -74,7 +74,7 @@ class TestHomeAssistantAPI:
 
         assert result is False
 
-    @patch('homeassistant_api.requests.post')
+    @patch('potterpi.homeassistant_api.requests.post')
     def test_fire_event_success(self, mock_post):
         """Test successful event firing"""
         mock_response = Mock()
@@ -92,7 +92,7 @@ class TestHomeAssistantAPI:
             timeout=5
         )
 
-    @patch('homeassistant_api.requests.post')
+    @patch('potterpi.homeassistant_api.requests.post')
     def test_fire_event_no_data(self, mock_post):
         """Test firing event without data"""
         mock_response = Mock()
@@ -107,7 +107,7 @@ class TestHomeAssistantAPI:
         call_args = mock_post.call_args
         assert call_args[1]["json"] == {}
 
-    @patch('homeassistant_api.requests.post')
+    @patch('potterpi.homeassistant_api.requests.post')
     def test_fire_event_failure(self, mock_post):
         """Test failed event firing"""
         mock_response = Mock()
@@ -118,7 +118,7 @@ class TestHomeAssistantAPI:
 
         assert result is False
 
-    @patch('homeassistant_api.requests.post')
+    @patch('potterpi.homeassistant_api.requests.post')
     def test_call_service_success(self, mock_post):
         """Test successful service call"""
         mock_response = Mock()
@@ -136,7 +136,7 @@ class TestHomeAssistantAPI:
             timeout=5
         )
 
-    @patch('homeassistant_api.requests.post')
+    @patch('potterpi.homeassistant_api.requests.post')
     def test_call_service_no_data(self, mock_post):
         """Test service call without data"""
         mock_response = Mock()
@@ -149,7 +149,7 @@ class TestHomeAssistantAPI:
         call_args = mock_post.call_args
         assert call_args[1]["json"] == {}
 
-    @patch('homeassistant_api.requests.get')
+    @patch('potterpi.homeassistant_api.requests.get')
     def test_get_states_success(self, mock_get):
         """Test successful states retrieval"""
         mock_response = Mock()
@@ -166,7 +166,7 @@ class TestHomeAssistantAPI:
         assert len(result) == 2
         assert result[0]["entity_id"] == "light.test"
 
-    @patch('homeassistant_api.requests.get')
+    @patch('potterpi.homeassistant_api.requests.get')
     def test_get_states_failure(self, mock_get):
         """Test failed states retrieval"""
         mock_response = Mock()
@@ -219,7 +219,7 @@ class TestHomeAssistantAPI:
         assert event_data["source"] == "potterpi"
         assert "points" not in event_data or event_data["points"] is None
 
-    @patch('homeassistant_api.requests.post')
+    @patch('potterpi.homeassistant_api.requests.post')
     def test_timeout_handling(self, mock_post):
         """Test that timeouts are properly handled"""
         import requests
@@ -229,7 +229,7 @@ class TestHomeAssistantAPI:
 
         assert result is False
 
-    @patch('homeassistant_api.requests.post')
+    @patch('potterpi.homeassistant_api.requests.post')
     def test_connection_error_handling(self, mock_post):
         """Test that connection errors are properly handled"""
         import requests

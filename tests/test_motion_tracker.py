@@ -8,7 +8,7 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from motion_tracker import WandTracker
+from potterpi.motion_tracker import WandTracker
 import numpy as np
 
 

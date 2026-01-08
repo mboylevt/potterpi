@@ -8,13 +8,13 @@ import time
 import signal
 import sys
 import os
-from camera_capture import IRCamera
-from motion_tracker import WandTracker
-from spell_recognition import SpellRecognizer
-from spell_logger import SpellLogger
-from web_viewer import WebViewer
-from homeassistant_api import HomeAssistantAPI
-from config import Config
+from .camera_capture import IRCamera
+from .motion_tracker import WandTracker
+from .spell_recognition import SpellRecognizer
+from .spell_logger import SpellLogger
+from .web_viewer import WebViewer
+from .homeassistant_api import HomeAssistantAPI
+from .config import Config
 
 class PotterPi:
     """Main application for wand tracking and spell recognition"""
