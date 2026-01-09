@@ -15,7 +15,7 @@ A real-time browser-accessible camera feed with motion tracking overlay that sho
 - **Responsive design** works on desktop and mobile
 
 ### Accessing the Viewer
-1. Start PotterPi: `python3 potterpi.py`
+1. Start PotterPi: `python3 run_potterpi.py`
 2. Open browser and navigate to: `http://potterpi.local:5000` (or `http://192.168.x.x:5000`)
 3. The viewer updates automatically
 
@@ -138,13 +138,33 @@ logs_enabled: true
 ```
 
 #### Step 3: Configure PotterPi Integration
+
+**Note**: For better resource efficiency on Raspberry Pi, we recommend using **Vector** instead of the full Datadog agent. Vector is a lightweight log forwarder that uses only ~20MB RAM vs ~150MB for the Datadog agent. See the Vector setup section below for configuration.
+
+If using the Datadog agent:
 ```bash
 # Create config directory
 sudo mkdir -p /etc/datadog-agent/conf.d/potterpi.d
 
-# Copy PotterPi config
-sudo cp /home/matt/potterpi/datadog-agent-config.yaml /etc/datadog-agent/conf.d/potterpi.d/conf.yaml
+# Create config file (example configuration)
+sudo nano /etc/datadog-agent/conf.d/potterpi.d/conf.yaml
+```
 
+Add the following configuration:
+```yaml
+logs:
+  - type: file
+    path: "/var/log/potterpi/potterpi.log"
+    service: "potterpi"
+    source: "python"
+    tags:
+      - "env:production"
+      - "application:potterpi"
+      - "device:raspberry-pi"
+```
+
+Then set permissions:
+```bash
 # Set permissions
 sudo chown dd-agent:dd-agent /etc/datadog-agent/conf.d/potterpi.d/conf.yaml
 ```
@@ -226,20 +246,36 @@ service:potterpi "PotterPi starting up"
 ## 4. Integrated Main Application
 
 ### Overview
-The main `potterpi.py` now integrates all features:
+The PotterPi application is now organized as a proper Python package under `potterpi/` with a main entry point `run_potterpi.py`. The application integrates all features:
 - Web viewer
 - Comprehensive logging
 - Home Assistant integration (optional)
 - Configuration file support
 
+### Package Structure
+```
+potterpi/
+├── run_potterpi.py         # Main entry point
+└── potterpi/               # Source package
+    ├── __init__.py
+    ├── potterpi.py         # Core application
+    ├── camera_capture.py
+    ├── motion_tracker.py
+    ├── spell_recognition.py
+    ├── spell_logger.py
+    ├── homeassistant_api.py
+    ├── config.py
+    └── web_viewer.py
+```
+
 ### Running PotterPi
 
 ```bash
 # With default config.yaml
-python3 potterpi.py
+python3 run_potterpi.py
 
 # With custom config
-python3 potterpi.py /path/to/custom-config.yaml
+python3 run_potterpi.py /path/to/custom-config.yaml
 ```
 
 ### Configuration File
@@ -292,7 +328,7 @@ spell_cooldown: 1.0
 
 ### Startup Sequence
 
-When you run `python3 potterpi.py`, the system will:
+When you run `python3 run_potterpi.py`, the system will:
 
 1. Load configuration from `config.yaml`
 2. Initialize logging with rotation
