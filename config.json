@@ -18,8 +18,8 @@
   },
   "homeassistant": {
     "enabled": true,
-    "url": "http://192.168.2.103:8123",
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJlZTEwN2UwYWJjNDY0OGU3YjlmOGZkMzI5MzhlMmRmNCIsImlhdCI6MTc2Nzg3OTIxMiwiZXhwIjoyMDgzMjM5MjEyfQ.iyJOLfbtqYgRXBenh3yw1ON9lpduZLlnjXyn_luSzCM"
+    "url": "http://URL:8123",
+    "token": "ADD TOKEN HERE"
   },
   "logging": {
     "log_dir": "/var/log/potterpi",
