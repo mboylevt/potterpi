@@ -6,6 +6,7 @@ Provides a browser-accessible view of the camera feed with motion tracking overl
 
 import cv2
 import numpy as np
+import os
 from flask import Flask, Response, render_template, jsonify
 import threading
 import time
@@ -22,7 +23,9 @@ class WebViewer:
             port: Port number for the web server (default 5000)
         """
         self.port = port
-        self.app = Flask(__name__)
+        # Set template folder to project root/templates
+        template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates')
+        self.app = Flask(__name__, template_folder=template_dir)
         self.current_frame = None
         self.tracking_path = []
         self.last_spell = None
@@ -81,12 +84,22 @@ class WebViewer:
 
             # Encode frame as JPEG
             ret, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+
+            # Explicitly delete frame copy to free memory
+            del frame
+
             if not ret:
                 continue
 
+            # Convert to bytes and yield
+            frame_bytes = buffer.tobytes()
+
+            # Delete buffer to free memory
+            del buffer
+
             # Yield frame in MJPEG format
             yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
 
             time.sleep(0.033)  # ~30 fps
 
@@ -121,7 +134,11 @@ class WebViewer:
 
         # Update frame and stats
         with self.frame_lock:
+            # Explicitly delete old frame before replacing
+            old_frame = self.current_frame
             self.current_frame = display_frame
+            del old_frame
+
             self.stats["frames_processed"] += 1
             self.stats["uptime"] = int(time.time() - self.start_time)
 
@@ -134,13 +151,17 @@ class WebViewer:
                 self.last_fps_time = time.time()
 
     def _add_info_overlay(self, frame):
-        """Add information overlay to frame"""
+        """Add information overlay to frame (modifies frame in-place)"""
         height, width = frame.shape[:2]
 
         # Semi-transparent info panel at top
-        overlay = frame.copy()
-        cv2.rectangle(overlay, (0, 0), (width, 80), (0, 0, 0), -1)
-        cv2.addWeighted(overlay, 0.6, frame, 0.4, 0, frame)
+        # Create overlay region directly instead of copying entire frame
+        overlay_region = frame[0:80, 0:width].copy()
+        cv2.rectangle(overlay_region, (0, 0), (width, 80), (0, 0, 0), -1)
+        cv2.addWeighted(overlay_region, 0.6, frame[0:80, 0:width], 0.4, 0, frame[0:80, 0:width])
+
+        # Delete temporary overlay region
+        del overlay_region
 
         # Add text info
         font = cv2.FONT_HERSHEY_SIMPLEX

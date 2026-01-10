@@ -63,21 +63,30 @@ class IRCamera:
     def get_frame(self):
         """
         Capture and return a single frame as grayscale numpy array
-        
+
         Returns:
             numpy.ndarray: Grayscale frame (height x width)
         """
         if self.camera is None:
             raise RuntimeError("Camera not started. Call start() first.")
-            
-        # Capture frame
-        frame = self.camera.capture_array()
-        
-        # Convert RGB to grayscale for faster processing
-        # For IR camera, all channels should be similar anyway
-        gray = np.mean(frame, axis=2).astype(np.uint8)
-        
-        return gray
+
+        # Capture frame using request-based API for proper buffer management
+        request = self.camera.capture_request()
+        try:
+            # Get the frame data
+            frame = request.make_array("main")
+
+            # Convert RGB to grayscale for faster processing
+            # For IR camera, all channels should be similar anyway
+            gray = np.mean(frame, axis=2).astype(np.uint8)
+
+            # Make a copy so we can release the request buffer
+            gray_copy = gray.copy()
+
+            return gray_copy
+        finally:
+            # Always release the request to free the buffer
+            request.release()
         
     def stop(self):
         """Stop and cleanup the camera"""

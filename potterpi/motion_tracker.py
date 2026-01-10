@@ -40,38 +40,47 @@ class WandTracker:
     def find_wand(self, frame):
         """
         Find the brightest point in the frame (wand tip)
-        
+
         Args:
             frame: Grayscale numpy array
-            
+
         Returns:
             tuple: (x, y) position of wand, or None if not found
         """
         # Apply threshold to find very bright points
         _, thresh = cv2.threshold(frame, self.brightness_threshold, 255, cv2.THRESH_BINARY)
-        
+
         # Find contours of bright regions
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        
+
+        # Delete threshold image to free memory
+        del thresh
+
         if not contours:
             return None
-            
+
         # Find the brightest region (likely the wand tip)
         brightest_region = None
         max_brightness = 0
-        
+
+        # Reuse mask instead of creating new ones
+        mask = np.zeros(frame.shape, dtype=np.uint8)
+
         for contour in contours:
-            # Create mask for this contour
-            mask = np.zeros(frame.shape, dtype=np.uint8)
+            # Clear and reuse mask
+            mask.fill(0)
             cv2.drawContours(mask, [contour], -1, 255, -1)
-            
+
             # Get mean brightness of this region
             mean_brightness = cv2.mean(frame, mask=mask)[0]
-            
+
             if mean_brightness > max_brightness:
                 max_brightness = mean_brightness
                 brightest_region = contour
-        
+
+        # Clean up mask
+        del mask
+
         if brightest_region is not None:
             # Get center of the brightest region
             M = cv2.moments(brightest_region)
@@ -79,7 +88,7 @@ class WandTracker:
                 cx = int(M["m10"] / M["m00"])
                 cy = int(M["m01"] / M["m00"])
                 return (cx, cy)
-        
+
         return None
     
     def update(self, frame):

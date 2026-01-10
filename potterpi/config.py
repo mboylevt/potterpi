@@ -61,6 +61,9 @@ class Config:
             "logging": {
                 "log_dir": "/var/log/potterpi",
                 "spell_cooldown": 1.0
+            },
+            "web_viewer": {
+                "port": 8080
             }
         }
     

@@ -94,17 +94,32 @@ class PotterPi:
             self.logger.log_info("Web viewer started successfully")
 
             # Initialize camera
-            self.camera.start()
-            self.logger.log_info("Camera initialized successfully")
+            camera_available = True
+            try:
+                self.camera.start()
+                self.logger.log_info("Camera initialized successfully")
+            except Exception as e:
+                camera_available = False
+                self.logger.log_error(f"Camera initialization failed: {e}")
+                self.logger.log_info("Continuing in web viewer only mode")
 
             # Set running flag
             self.running = True
             self.logger.log_info("="*70)
-            self.logger.log_info("PotterPi is now active and watching for spells!")
+            if camera_available:
+                self.logger.log_info("PotterPi is now active and watching for spells!")
+            else:
+                self.logger.log_info("PotterPi is running in web viewer only mode")
             self.logger.log_info("="*70)
 
-            # Run main loop
-            self.run()
+            # Run main loop only if camera is available
+            if camera_available:
+                self.run()
+            else:
+                # Keep web viewer running without processing loop
+                self.logger.log_info("Web viewer is accessible - waiting for shutdown signal")
+                import signal
+                signal.pause()
 
         except KeyboardInterrupt:
             self.logger.log_info("Keyboard interrupt received")
@@ -217,7 +232,7 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
 
     # Check for config file argument
-    config_file = sys.argv[1] if len(sys.argv) > 1 else "config.yaml"
+    config_file = sys.argv[1] if len(sys.argv) > 1 else "config.json"
 
     # Create and start PotterPi
     potterpi = PotterPi(config_file)
