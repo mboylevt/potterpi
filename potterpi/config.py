@@ -64,6 +64,11 @@ class Config:
             },
             "web_viewer": {
                 "port": 8080
+            },
+            "datadog": {
+                "enabled": False,
+                "api_key": "",
+                "app_key": ""
             }
         }
     

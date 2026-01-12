@@ -19,7 +19,19 @@
   "homeassistant": {
     "enabled": true,
     "url": "http://URL:8123",
-    "token": "ADD TOKEN HERE"
+    "token": "ADD TOKEN HERE",
+    "spell_actions": {
+      "Vertical Line Down": {
+        "domain": "switch",
+        "service": "turn_on",
+        "entity_id": "switch.ciarans_room_ceiling_fan"
+      },
+      "Vertical Line Up": {
+        "domain": "switch",
+        "service": "turn_off",
+        "entity_id": "switch.ciarans_room_ceiling_fan"
+      }
+    }
   },
   "logging": {
     "log_dir": "/var/log/potterpi",
@@ -27,5 +39,10 @@
   },
   "web_viewer": {
     "port": 8080
+  },
+  "datadog": {
+    "enabled": false,
+    "api_key": "",
+    "app_key": ""
   }
 }

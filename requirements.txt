@@ -15,5 +15,5 @@ picamera2>=0.3.0
 # Web viewer
 Flask>=3.0.0
 
-# Datadog logging (optional - install on Pi only)
-# datadog>=0.48.0
+# Datadog events (optional - install on Pi only)
+datadog>=0.48.0

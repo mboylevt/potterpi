@@ -15,20 +15,24 @@ logger = logging.getLogger("PotterPi")
 class HomeAssistantAPI:
     """Interface to Home Assistant REST API"""
 
-    def __init__(self, url: str, token: str):
+    def __init__(self, url: str, token: str, spell_actions: Optional[Dict] = None):
         """
         Initialize Home Assistant API client
 
         Args:
             url: Base URL of Home Assistant (e.g., "http://192.168.2.103:8123")
             token: Long-lived access token
+            spell_actions: Optional dict mapping spell names to HA service calls
         """
         self.url = url.rstrip('/')
         self.headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json"
         }
+        self.spell_actions = spell_actions or {}
         logger.info(f"HomeAssistantAPI initialized for {self.url}")
+        if self.spell_actions:
+            logger.info(f"Loaded {len(self.spell_actions)} spell action mappings")
     
     def test_connection(self) -> bool:
         """
@@ -145,7 +149,7 @@ class HomeAssistantAPI:
     def trigger_spell_action(self, spell_name: str, spell_stats: Optional[Dict] = None) -> bool:
         """
         Trigger a spell action in Home Assistant
-        Fires a custom event that can be used in HA automations
+        If spell has a configured action, calls the service; otherwise fires an event
 
         Args:
             spell_name: Name of the spell that was cast
@@ -154,20 +158,54 @@ class HomeAssistantAPI:
         Returns:
             bool: True if successful
         """
-        event_data = {
-            "spell": spell_name,
-            "source": "potterpi"
-        }
-
-        if spell_stats:
-            event_data.update({
-                "points": spell_stats.get("num_points"),
-                "straightness": spell_stats.get("straightness"),
-                "distance": spell_stats.get("straight_distance")
-            })
-
         logger.info(f"Triggering Home Assistant action for spell: {spell_name}")
-        return self.fire_event("potterpi_spell_cast", event_data)
+
+        # Check if this spell has a configured action
+        if spell_name in self.spell_actions:
+            action = self.spell_actions[spell_name]
+            domain = action.get("domain")
+            service = action.get("service")
+            entity_id = action.get("entity_id")
+
+            if domain and service and entity_id:
+                logger.info(f"Calling {domain}.{service} for {entity_id}")
+                service_data = {"entity_id": entity_id}
+                success = self.call_service(domain, service, service_data)
+
+                # Also fire event for logging/automation purposes
+                event_data = {
+                    "spell": spell_name,
+                    "source": "potterpi",
+                    "action": f"{domain}.{service}",
+                    "entity_id": entity_id
+                }
+                if spell_stats:
+                    event_data.update({
+                        "points": spell_stats.get("num_points"),
+                        "straightness": spell_stats.get("straightness"),
+                        "distance": spell_stats.get("straight_distance")
+                    })
+                self.fire_event("potterpi_spell_cast", event_data)
+
+                return success
+            else:
+                logger.error(f"Invalid spell action config for {spell_name}: {action}")
+                return False
+        else:
+            # No configured action - just fire event
+            event_data = {
+                "spell": spell_name,
+                "source": "potterpi"
+            }
+
+            if spell_stats:
+                event_data.update({
+                    "points": spell_stats.get("num_points"),
+                    "straightness": spell_stats.get("straightness"),
+                    "distance": spell_stats.get("straight_distance")
+                })
+
+            return self.fire_event("potterpi_spell_cast", event_data)
 
 
 def test_api():

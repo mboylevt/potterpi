@@ -14,6 +14,7 @@ from .spell_recognition import SpellRecognizer
 from .spell_logger import SpellLogger
 from .web_viewer import WebViewer
 from .homeassistant_api import HomeAssistantAPI
+from .datadog_events import DatadogEvents
 from .config import Config
 
 class PotterPi:
@@ -63,9 +64,10 @@ class PotterPi:
         if ha_enabled:
             ha_url = self.config.get("homeassistant.url")
             ha_token = self.config.get("homeassistant.token")
+            ha_spell_actions = self.config.get("homeassistant.spell_actions", {})
 
             if ha_url and ha_token:
-                self.ha_api = HomeAssistantAPI(ha_url, ha_token)
+                self.ha_api = HomeAssistantAPI(ha_url, ha_token, ha_spell_actions)
                 self.logger.log_info("Home Assistant integration enabled")
                 if self.ha_api.test_connection():
                     self.logger.log_info("Home Assistant connection successful")
@@ -76,6 +78,17 @@ class PotterPi:
                 self.logger.log_warning("Home Assistant enabled but URL or token not configured")
         else:
             self.logger.log_info("Home Assistant integration disabled")
+
+        # Initialize Datadog events if configured
+        self.datadog = None
+        dd_enabled = self.config.get("datadog.enabled", False)
+        if dd_enabled:
+            dd_api_key = self.config.get("datadog.api_key")
+            dd_app_key = self.config.get("datadog.app_key")
+            self.datadog = DatadogEvents(dd_api_key, dd_app_key, enabled=True)
+            self.logger.log_info("Datadog events integration enabled")
+        else:
+            self.logger.log_info("Datadog events integration disabled")
 
         self.running = False
         self.spell_cooldown = self.config.get("spell_cooldown", 1.0)
@@ -172,13 +185,36 @@ class PotterPi:
                         # Log the spell
                         self.logger.log_spell(spell, stats)
 
+                        # Send Datadog event for spell detection
+                        if self.datadog:
+                            try:
+                                self.datadog.spell_detected(spell, stats)
+                            except Exception as e:
+                                self.logger.log_error(f"Error sending Datadog spell event: {e}")
+
                         # Update web viewer
                         self.web_viewer.log_spell(spell)
 
                         # Trigger Home Assistant action if configured
+                        ha_action = None
+                        ha_entity = None
                         if self.ha_api:
                             try:
+                                # Get action info before triggering
+                                if spell in self.ha_api.spell_actions:
+                                    action_config = self.ha_api.spell_actions[spell]
+                                    ha_action = f"{action_config.get('domain')}.{action_config.get('service')}"
+                                    ha_entity = action_config.get('entity_id')
+
                                 success = self.ha_api.trigger_spell_action(spell, stats)
+
+                                # Send Datadog event for HA action
+                                if self.datadog and ha_action and ha_entity:
+                                    try:
+                                        self.datadog.home_assistant_action(spell, ha_action, ha_entity, success)
+                                    except Exception as e:
+                                        self.logger.log_error(f"Error sending Datadog HA action event: {e}")
+
                                 if success:
                                     self.logger.log_info(f"Home Assistant action triggered for: {spell}")
                                 else:
@@ -197,7 +233,7 @@ class PotterPi:
                 time.sleep(0.03)  # ~30 fps
 
                 # Periodic status update
-                if frame_count % 900 == 0:  # Every 30 seconds at 30fps
+                if frame_count % 108000 == 0:  # Every hour at 30fps
                     self.logger.log_info(f"Status: {frame_count} frames processed, {spell_count} spells detected")
 
         except KeyboardInterrupt:
