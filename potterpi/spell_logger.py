@@ -32,6 +32,9 @@ class SpellLogger:
         self.logger = logging.getLogger("PotterPi")
         self.logger.setLevel(logging.DEBUG)  # Set to DEBUG for detailed logs
 
+        # Prevent propagation to root logger to avoid duplicate logs
+        self.logger.propagate = False
+
         # Rotating file handler - aggressive rotation to prevent SD card fill
         file_handler = RotatingFileHandler(
             self.log_path,
@@ -41,22 +44,24 @@ class SpellLogger:
         )
         file_handler.setLevel(logging.INFO)
 
-        # Console handler for debugging
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.INFO)
-
         # Enhanced formatter with module name for better debugging
         formatter = logging.Formatter(
             "%(asctime)s - %(name)s - %(levelname)s - %(module)s:%(lineno)d - %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S"
         )
         file_handler.setFormatter(formatter)
-        console_handler.setFormatter(formatter)
 
         # Add handlers if not already added
         if not self.logger.handlers:
             self.logger.addHandler(file_handler)
-            self.logger.addHandler(console_handler)
+
+            # Only add console handler if not running as systemd service
+            # (systemd captures stdout and writes to the same log file)
+            if not os.environ.get('INVOCATION_ID'):  # INVOCATION_ID is set by systemd
+                console_handler = logging.StreamHandler()
+                console_handler.setLevel(logging.INFO)
+                console_handler.setFormatter(formatter)
+                self.logger.addHandler(console_handler)
 
     def log_spell(self, spell_name, stats=None):
         """
