@@ -49,6 +49,8 @@ logs/
 # Configuration (keep examples, exclude actual configs with secrets)
 config.yaml
 # Keep config.yaml.example
+config.json
+secrets.json
 
 # Datadog and Vector configs with API keys - exclude
 datadog-agent-config*.yaml

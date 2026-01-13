@@ -22,7 +22,7 @@ class TestConfig:
             config_file = f.name
 
         try:
-            config = Config(config_file)
+            config = Config(config_file, secrets_file="/nonexistent/secrets.json")
 
             # Check default values
             assert config.get("camera.width") == 640
@@ -48,7 +48,7 @@ class TestConfig:
             config_file = f.name
 
         try:
-            config = Config(config_file)
+            config = Config(config_file, secrets_file="/nonexistent/secrets.json")
 
             assert config.get("camera.width") == 1280
             assert config.get("camera.height") == 720
@@ -64,7 +64,7 @@ class TestConfig:
             config_file = f.name
 
         try:
-            config = Config(config_file)
+            config = Config(config_file, secrets_file="/nonexistent/secrets.json")
 
             # Existing key
             assert config.get("camera.width", 999) == 640
@@ -84,7 +84,7 @@ class TestConfig:
             config_file = f.name
 
         try:
-            config = Config(config_file)
+            config = Config(config_file, secrets_file="/nonexistent/secrets.json")
 
             config.set("camera.width", 1920)
             assert config.get("camera.width") == 1920
@@ -101,7 +101,7 @@ class TestConfig:
             config_file = f.name
 
         try:
-            config = Config(config_file)
+            config = Config(config_file, secrets_file="/nonexistent/secrets.json")
 
             config.set("level1.level2.level3.value", "deep")
             assert config.get("level1.level2.level3.value") == "deep"
@@ -115,7 +115,7 @@ class TestConfig:
             config_file = f.name
 
         try:
-            config = Config(config_file)
+            config = Config(config_file, secrets_file="/nonexistent/secrets.json")
             config.set("camera.width", 1920)
             config.set("test.value", "saved")
             config.save_config()
@@ -137,13 +137,13 @@ class TestConfig:
 
         try:
             # Create and save config
-            config1 = Config(config_file)
+            config1 = Config(config_file, secrets_file="/nonexistent/secrets.json")
             config1.set("camera.width", 1920)
             config1.set("custom.setting", "test123")
             config1.save_config()
 
             # Load in new instance
-            config2 = Config(config_file)
+            config2 = Config(config_file, secrets_file="/nonexistent/secrets.json")
             assert config2.get("camera.width") == 1920
             assert config2.get("custom.setting") == "test123"
         finally:
@@ -156,7 +156,7 @@ class TestConfig:
             config_file = f.name
 
         try:
-            config = Config(config_file)
+            config = Config(config_file, secrets_file="/nonexistent/secrets.json")
 
             camera_config = config.get("camera")
             assert isinstance(camera_config, dict)
@@ -173,7 +173,7 @@ class TestConfig:
             config_file = f.name
 
         try:
-            config = Config(config_file)
+            config = Config(config_file, secrets_file="/nonexistent/secrets.json")
             # Should fall back to defaults
             assert config.get("camera.width") == 640
         finally:
@@ -186,7 +186,7 @@ class TestConfig:
             config_file = f.name
 
         try:
-            config = Config(config_file)
+            config = Config(config_file, secrets_file="/nonexistent/secrets.json")
 
             assert config.get("camera.width") == 640
             config.set("camera.width", 1920)
@@ -201,7 +201,7 @@ class TestConfig:
             config_file = f.name
 
         try:
-            config = Config(config_file)
+            config = Config(config_file, secrets_file="/nonexistent/secrets.json")
 
             # Test default HA config
             assert config.get("homeassistant.enabled") is False
