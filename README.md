@@ -124,7 +124,7 @@ The viewer shows:
 2. Add credentials to `secrets.json`:
 ```json
 {
-  "homeassistant_token": "eyJhbGciOiJIUzI1NiIsInR5...",
+  "homeassistant_token": "your_long_lived_access_token_here",
   "homeassistant_url": "http://192.168.1.100:8123"
 }
 ```
