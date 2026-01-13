@@ -43,14 +43,21 @@ pip3 install -r requirements.txt
 
 ### 4. Configure the Application
 
-Copy the example configuration and customize it:
+The application uses two configuration files:
+- `config.json` - Main configuration (camera, tracking, spell settings)
+- `secrets.json` - Sensitive credentials (tokens, API keys) - **excluded from git**
+
+Create your configuration:
 
 ```bash
-cp config.yaml.example config.yaml
-nano config.yaml
+# Main config (can be checked into git)
+nano ~/potterpi/config.json
+
+# Secrets file (NEVER check into git - already in .gitignore)
+nano ~/potterpi/secrets.json
 ```
 
-Edit the configuration to match your setup (Home Assistant URL/token, camera settings, etc.).
+See the Configuration section below for detailed structure and options.
 
 ### 5. Create Log Directory
 
@@ -77,18 +84,12 @@ cd ~/potterpi
 python3 run_potterpi.py
 ```
 
-Or with a custom configuration:
-
-```bash
-python3 run_potterpi.py /path/to/custom-config.yaml
-```
-
 The application will:
 - Initialize the camera in IR mode
 - Start tracking bright IR reflections (wand tip)
 - Recognize spell patterns
 - Log detected spells to `/var/log/potterpi/potterpi.log`
-- Start web viewer at `http://potterpi.local:5000`
+- Start web viewer at `http://potterpi.local:8080`
 - Integrate with Home Assistant (if configured)
 
 Press Ctrl+C to stop.
@@ -98,13 +99,13 @@ Press Ctrl+C to stop.
 Access the live camera feed with tracking overlay:
 
 ```bash
-http://potterpi.local:5000
+http://potterpi.local:8080
 ```
 
 Or using IP address:
 
 ```bash
-http://192.168.x.x:5000
+http://192.168.x.x:8080
 ```
 
 The viewer shows:
@@ -115,24 +116,58 @@ The viewer shows:
 
 ### Home Assistant Integration
 
-If Home Assistant is configured in `config.yaml`, PotterPi will:
-- Fire `potterpi_spell_cast` events when spells are detected
-- Include spell details (name, straightness, distance, points)
-- Allow you to create automations based on spell gestures
+#### Setup
 
-Example Home Assistant automation:
-```yaml
-automation:
-  - alias: "Lumos - Turn on lights"
-    trigger:
-      platform: event
-      event_type: potterpi_spell_cast
-      event_data:
-        spell: "Horizontal Line Right"
-    action:
-      service: light.turn_on
-      target:
-        entity_id: light.living_room
+1. Create a long-lived access token in Home Assistant:
+   - Profile → Security → Long-Lived Access Tokens → Create Token
+
+2. Add credentials to `secrets.json`:
+```json
+{
+  "homeassistant_token": "eyJhbGciOiJIUzI1NiIsInR5...",
+  "homeassistant_url": "http://192.168.1.100:8123"
+}
+```
+
+3. Enable integration in `config.json`:
+```json
+{
+  "homeassistant": {
+    "enabled": true,
+    "spell_actions": {
+      "Vertical Line Down": {
+        "domain": "switch",
+        "service": "turn_on",
+        "entity_id": "switch.ceiling_fan"
+      }
+    }
+  }
+}
+```
+
+#### Features
+
+If Home Assistant is configured, PotterPi will:
+- Call Home Assistant services when spells are detected
+- Log all actions and responses
+- Automatically retry on failures
+
+Example spell action configuration:
+```json
+{
+  "spell_actions": {
+    "Horizontal Line Right": {
+      "domain": "light",
+      "service": "turn_on",
+      "entity_id": "light.living_room"
+    },
+    "Horizontal Line Left": {
+      "domain": "light",
+      "service": "turn_off",
+      "entity_id": "light.living_room"
+    }
+  }
+}
 ```
 
 ### Alternative Scripts
@@ -168,48 +203,101 @@ Test coverage:
 
 ## Configuration
 
-### Configuration File Structure
+### Configuration Files
 
-The `config.yaml` file controls all aspects of PotterPi:
+PotterPi uses two JSON configuration files for security:
 
-```yaml
-# Logging with automatic rotation
-logging:
-  dir: "/var/log/potterpi"
-  file: "potterpi.log"
-  max_bytes: 10485760  # 10MB max per file
-  backup_count: 5      # Keep 5 backup files
+1. **`config.json`** - Main configuration (safe to commit to git)
+2. **`secrets.json`** - Sensitive credentials (excluded from git via .gitignore)
 
-# Camera settings
-camera:
-  width: 640
-  height: 480
-  framerate: 30
+### config.json Structure
 
-# Motion tracking sensitivity
-tracker:
-  brightness_threshold: 200  # 0-255, brightness for wand detection
-  min_movement: 5            # Minimum pixel movement to record
-  path_length: 30            # Number of tracking points
+This file contains all non-sensitive settings:
 
-# Spell recognition thresholds
-recognizer:
-  min_points: 8               # Minimum points for valid spell
-  straightness_threshold: 0.6 # How straight line must be (0-1)
-
-# Web viewer
-web_viewer:
-  port: 5000
-
-# Home Assistant integration (optional)
-homeassistant:
-  enabled: true
-  url: "http://192.168.1.100:8123"
-  token: "your_long_lived_access_token_here"
-
-# Detection cooldown (seconds between spell detections)
-spell_cooldown: 1.0
+```json
+{
+  "camera": {
+    "width": 640,
+    "height": 480,
+    "framerate": 30,
+    "exposure_time": 10000,
+    "analog_gain": 2.0
+  },
+  "tracking": {
+    "brightness_threshold": 200,
+    "min_movement": 5,
+    "path_length": 30
+  },
+  "recognition": {
+    "min_points": 8,
+    "straightness_threshold": 0.6,
+    "min_distance": 30
+  },
+  "homeassistant": {
+    "enabled": true,
+    "spell_actions": {
+      "Vertical Line Down": {
+        "domain": "switch",
+        "service": "turn_on",
+        "entity_id": "switch.ceiling_fan"
+      },
+      "Vertical Line Up": {
+        "domain": "switch",
+        "service": "turn_off",
+        "entity_id": "switch.ceiling_fan"
+      }
+    }
+  },
+  "logging": {
+    "log_dir": "/var/log/potterpi",
+    "spell_cooldown": 1.0
+  },
+  "web_viewer": {
+    "port": 8080
+  },
+  "datadog": {
+    "enabled": false
+  }
+}
 ```
+
+### secrets.json Structure
+
+**IMPORTANT:** This file contains sensitive credentials and should **NEVER** be committed to git.
+
+Create this file at `~/potterpi/secrets.json`:
+
+```json
+{
+  "homeassistant_token": "your_long_lived_access_token_here",
+  "homeassistant_url": "http://192.168.1.100:8123",
+  "datadog_api_key": "your_datadog_api_key",
+  "datadog_app_key": "your_datadog_app_key"
+}
+```
+
+The secrets file is automatically loaded at startup and merged with config.json.
+
+### Environment Variable Overrides
+
+You can override secrets using environment variables (highest priority):
+
+```bash
+export POTTERPI_HA_TOKEN="your_token"
+export POTTERPI_HA_URL="http://192.168.1.100:8123"
+export POTTERPI_DD_API_KEY="your_datadog_key"
+export POTTERPI_DD_APP_KEY="your_datadog_app_key"
+
+python3 run_potterpi.py
+```
+
+### Configuration Priority
+
+Settings are loaded in this priority order (highest to lowest):
+1. **Environment Variables** - `POTTERPI_*` vars
+2. **Secrets File** - `~/potterpi/secrets.json`
+3. **Config File** - `~/potterpi/config.json`
+4. **Defaults** - Built-in defaults
 
 ### Tuning Tips
 
@@ -328,14 +416,24 @@ potterpi/
 - Increase `spell_cooldown` to prevent rapid re-detection
 
 ### Web viewer not accessible
-- Check Flask is running: `ss -tlnp | grep 5000`
+- Check Flask is running: `ss -tlnp | grep 8080`
 - Verify firewall settings: `sudo ufw status`
 - Try IP address instead of hostname
 
 ### Home Assistant integration not working
-- Verify HA URL and token in config.yaml
-- Check HA is accessible: `curl -H "Authorization: Bearer YOUR_TOKEN" http://HA_URL/api/`
-- Check logs for connection errors
+- Verify credentials in `secrets.json`:
+  ```bash
+  cat ~/potterpi/secrets.json
+  ```
+- Check HA is accessible:
+  ```bash
+  curl -H "Authorization: Bearer YOUR_TOKEN" http://HA_URL/api/
+  ```
+- Verify `homeassistant.enabled` is `true` in config.json
+- Check logs for connection errors:
+  ```bash
+  grep "Home Assistant" /var/log/potterpi/potterpi.log
+  ```
 
 ### Performance issues
 - Reduce camera resolution in config.yaml

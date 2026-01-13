@@ -16,14 +16,17 @@ A real-time browser-accessible camera feed with motion tracking overlay that sho
 
 ### Accessing the Viewer
 1. Start PotterPi: `python3 run_potterpi.py`
-2. Open browser and navigate to: `http://potterpi.local:5000` (or `http://192.168.x.x:5000`)
+2. Open browser and navigate to: `http://potterpi.local:8080` (or `http://192.168.x.x:8080`)
 3. The viewer updates automatically
 
 ### Configuration
-Edit `config.yaml`:
-```yaml
-web_viewer:
-  port: 5000  # Change port if needed
+Edit `config.json`:
+```json
+{
+  "web_viewer": {
+    "port": 8080
+  }
+}
 ```
 
 ### What You'll See
@@ -52,14 +55,17 @@ Logs are automatically rotated to prevent disk space issues:
 - **Automatic cleanup**: Old logs deleted automatically
 
 ### Configuration
-Edit `config.yaml`:
-```yaml
-logging:
-  dir: "/var/log/potterpi"
-  file: "potterpi.log"
-  max_bytes: 10485760  # 10MB
-  backup_count: 5      # Keep 5 backups
+Edit `config.json`:
+```json
+{
+  "logging": {
+    "log_dir": "/var/log/potterpi",
+    "spell_cooldown": 1.0
+  }
+}
 ```
+
+Note: Log rotation is handled automatically by Python's RotatingFileHandler with defaults of 10MB per file and 5 backup files.
 
 ### Log Location
 - **Main log**: `/var/log/potterpi/potterpi.log`
@@ -71,7 +77,7 @@ logging:
 ```
 2026-01-08 10:15:30 - PotterPi - INFO - PotterPi starting up...
 2026-01-08 10:15:32 - PotterPi - INFO - Camera started successfully: 640x480 @ 30fps
-2026-01-08 10:15:32 - PotterPi - INFO - Web viewer started at http://0.0.0.0:5000
+2026-01-08 10:15:32 - PotterPi - INFO - Web viewer started at http://0.0.0.0:8080
 2026-01-08 10:15:33 - PotterPi - INFO - Home Assistant connection successful
 2026-01-08 10:15:33 - PotterPi - INFO - PotterPi is now active and watching for spells!
 ```
@@ -271,66 +277,76 @@ potterpi/
 ### Running PotterPi
 
 ```bash
-# With default config.yaml
+# With default config.json
 python3 run_potterpi.py
 
 # With custom config
-python3 run_potterpi.py /path/to/custom-config.yaml
+python3 run_potterpi.py /path/to/custom-config.json
 ```
 
-### Configuration File
+### Configuration Files
 
-Copy the example and customize:
+PotterPi uses two configuration files:
+
+1. **`config.json`** - Main configuration (safe to commit)
+2. **`secrets.json`** - Sensitive credentials (excluded from git)
+
+Example `config.json`:
+```json
+{
+  "camera": {
+    "width": 640,
+    "height": 480,
+    "framerate": 30,
+    "exposure_time": 10000,
+    "analog_gain": 2.0
+  },
+  "tracking": {
+    "brightness_threshold": 200,
+    "min_movement": 5,
+    "path_length": 30
+  },
+  "recognition": {
+    "min_points": 8,
+    "straightness_threshold": 0.6,
+    "min_distance": 30
+  },
+  "homeassistant": {
+    "enabled": true
+  },
+  "logging": {
+    "log_dir": "/var/log/potterpi",
+    "spell_cooldown": 1.0
+  },
+  "web_viewer": {
+    "port": 8080
+  },
+  "datadog": {
+    "enabled": false
+  }
+}
+```
+
+Example `secrets.json` (keep secure, never commit):
+```json
+{
+  "homeassistant_token": "your_long_lived_access_token",
+  "homeassistant_url": "http://192.168.2.103:8123",
+  "datadog_api_key": "your_datadog_api_key"
+}
+```
+
+You can also use environment variables to override secrets:
 ```bash
-cp config.yaml.example config.yaml
-nano config.yaml
-```
-
-Example configuration:
-```yaml
-# Logging with rotation
-logging:
-  dir: "/var/log/potterpi"
-  file: "potterpi.log"
-  max_bytes: 10485760  # 10MB
-  backup_count: 5
-
-# Camera settings
-camera:
-  width: 640
-  height: 480
-  framerate: 30
-
-# Tracking sensitivity
-tracker:
-  brightness_threshold: 200
-  min_movement: 5
-  path_length: 30
-
-# Recognition parameters
-recognizer:
-  min_points: 8
-  straightness_threshold: 0.6
-
-# Web viewer port
-web_viewer:
-  port: 5000
-
-# Home Assistant integration
-homeassistant:
-  enabled: true
-  url: "http://192.168.2.103:8123"
-  token: "YOUR_TOKEN_HERE"
-
-# Detection cooldown
-spell_cooldown: 1.0
+export POTTERPI_HA_TOKEN="your_token"
+export POTTERPI_HA_URL="http://192.168.2.103:8123"
 ```
 
 ### Startup Sequence
 
 When you run `python3 run_potterpi.py`, the system will:
 
-1. Load configuration from `config.yaml`
+1. Load configuration from `config.json`
 2. Initialize logging with rotation
 3. Initialize camera, tracker, and recognizer
 4. Start web viewer on configured port
@@ -344,7 +360,7 @@ Example startup output:
 PotterPi - IR Wand Tracking System
 ======================================================================
 Starting up...
-Web viewer started at http://0.0.0.0:5000
+Web viewer started at http://0.0.0.0:8080
 Camera initialized successfully
 Home Assistant connection successful
 ======================================================================
@@ -357,7 +373,7 @@ PotterPi is now active and watching for spells!
 ### Real-Time Monitoring
 
 **Option 1: Web Viewer**
-- Open `http://potterpi.local:5000`
+- Open `http://potterpi.local:8080`
 - See live camera feed, tracking, and statistics
 
 **Option 2: Live Logs**
@@ -379,7 +395,7 @@ tail -f /var/log/potterpi/potterpi.log
 #### Web Viewer Not Accessible
 ```bash
 # Check if Flask is running
-ss -tlnp | grep 5000
+ss -tlnp | grep 8080
 
 # Check firewall
 sudo ufw status
@@ -433,13 +449,54 @@ With default settings (10MB × 5 backups = 50MB max):
 
 ## 7. Security Considerations
 
+### Secrets Management
+
+PotterPi implements secure credential storage:
+
+**Secrets File (`secrets.json`)**:
+- Stores sensitive credentials (tokens, API keys)
+- Excluded from git via `.gitignore`
+- File permissions: `600` (readable only by owner)
+- Location: `~/potterpi/secrets.json`
+- Never committed to version control
+
+**Configuration Priority**:
+1. Environment variables (highest priority)
+2. Secrets file
+3. Config file
+4. Built-in defaults
+
+**Best Practices**:
+- Always use `secrets.json` for tokens and API keys
+- Never put credentials in `config.json`
+- Use environment variables for CI/CD or containerized deployments
+- Keep secrets file readable only by the service user
+
+**Supported Secrets**:
+```json
+{
+  "homeassistant_token": "Long-lived access token",
+  "homeassistant_url": "Home Assistant URL",
+  "datadog_api_key": "Datadog API key",
+  "datadog_app_key": "Datadog application key"
+}
+```
+
+**Environment Variable Overrides**:
+```bash
+POTTERPI_HA_TOKEN       # Home Assistant token
+POTTERPI_HA_URL         # Home Assistant URL
+POTTERPI_DD_API_KEY     # Datadog API key
+POTTERPI_DD_APP_KEY     # Datadog app key
+```
+
 ### Web Viewer
 - Runs on all interfaces (0.0.0.0)
 - No authentication by default
 - Recommended: Use firewall or reverse proxy with auth
 
 ### Datadog
-- API key required
+- API key stored in secrets.json (not config.json)
 - Logs transmitted over HTTPS
 - Tags can include sensitive info - review config
 
