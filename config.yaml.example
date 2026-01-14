@@ -32,7 +32,7 @@ web_viewer:
 # Home Assistant integration
 homeassistant:
   enabled: false             # Set to true to enable
-  url: "http://192.168.2.103:8123"
+  url: "HA_IP_OR_URL:HA:PORT"
   token: "YOUR_LONG_LIVED_ACCESS_TOKEN_HERE"
 
 # Spell detection settings
